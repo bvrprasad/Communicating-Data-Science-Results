@@ -1,22 +1,22 @@
 ---
-title: "Crime Analysis: San Francisco, Summer 2014 "
+title: 'Crime Analysis: San Francisco, Summer 2014 '
 author: "Prasad Bandaru"
 date: "24 January 2016"
-output: pdf_document
+output: html_document
 ---
 
 The criminal incident data from San Francisco for the summer of 2014 has been made public. I would like to make an visual analysis on these incidents and try to answer the following questions.  
 
-* How do incidents vary by time of day?  Which incidents are most common in the evening? During what periods of the day are thefts most common?
-* How do incidents vary by neighborhood? Which incidents are most common in the city center? In what areas or neighborhoods are robberies or thefts most common?
-* How do incidents vary month to month in the Summer 2014 dataset?
+* How do incidents vary by time of day?
+* How do incidents vary by district?
+* How do incidents vary month to month?
 * Which incident types tend to correlate with each other on a day-by-day basis?
 
 # Initial setup
 
 Load the required libraries.
 
-```{r}
+```{r message=FALSE}
 library("dplyr")
 library("lubridate")
 library("ggplot2")
@@ -33,7 +33,7 @@ levels(san$Category)
 ```
 
 ## Enriching data
-I enriched the data by converting the Date field to proper date format. Additionally I deduct Hour and Month and store them in separate fields. I also re-arrange the DayOfWeek from Monday to Sunday. In this way it is easier to use the data in the analysis. Also, I add an additional count field and set it to 1. This field is for easy aggregation.
+I enriched the data by converting the Date field to proper date format. Additionally I deduct Hour and Month and store them in separate fields. I also re-arranged the DayOfWeek from Monday to Sunday. In this way it is easier to use the data in the analysis. I add an additional count field to make it easier for aggregation.
 
 ```{r}
 san$Date <- as.POSIXct(strptime(san$Date, format = "%m/%d/%Y"))
@@ -46,7 +46,7 @@ san$Count <- c(1)
 ```
 
 # How incidents vary by time of day
-I consider only the Hour part of the time and plot the top 5 number of incidents for each hour spread out for each category. The plot reveals that theft has a higher variation over the day. Also, the number of thefts are significantly higher in the evening. The number of thefts increases slowly over the day and peaks around 6pm. Then it gradually comes down and is at minimum between 4 am and 5 am.
+I consider only the Hour part of the time and plot the incidents count for the top 5 category. The plot reveals that theft has a higher variation over the day. The number of thefts increases slowly over the day and peaks at 6pm. Then it gradually comes down and is at minimum between 4 am and 5 am. Also, there are more vehicle thefts in the evening.
 
 ```{r}
 counts <- aggregate(Count ~ Category + Hour, data = san, sum)
@@ -62,34 +62,48 @@ ggplot(data = subset(counts, Category %in% topX [1 : 5]), aes(Hour, Count)) +
   geom_point(aes(colour=Category), size=3)    
 ```
 
-
-# How incidents vary by neighborhood
-Further I split the incidents by district. It reveals that thefts are more in central, northern and southern districts compared to other districts. 
+# How incidents vary by district
+Further I split the top 5 incidents by district. It reveals that the number of thefts are more in central, northern and southern districts compared to other districts.
 
 ```{r}
 areawise <- aggregate(Count ~ Category + PdDistrict, data = san, sum)
-levels(areawise$PdDistrict)
-#areawise$Category <- substr(areawise$Category, 1, 11)
 ggplot(data = subset(areawise, Category %in% topX [1 : 5]), aes(PdDistrict, Count)) +
   facet_grid(~ Category) +
   labs(title = "Incidents by district", x = "Hour of the day", y = "Incidents count") +
   theme(axis.text = element_text(size = 6, color = "blue")) +
   theme(strip.text = element_text(size = 10)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
- # geom_bar(aes(colour=Category, group=Category))
   geom_point(color = c("red"))
 ```
 
-## How incidents vary in the central district
-The following chart gives a better view of the incidents in the central district.
+# How thefts vary in the southern district
+Further analysing the thefts in the southern district. 
+
+## How thefts vary in the southern district by day-of-week
+Plotting the thefts count by day-of-week reveals that there are only few variations over the week. And little higher value during the weekend.
 
 ```{r}
-central <- areawise[areawise$PdDistrict == "CENTRAL", ]
-ggplot(central, aes(Category, Count)) +
-  labs(title = "Incidents in central district", x = "Hour of the day", y = "Incidents count") +
-  theme(axis.text = element_text(size = 6, color = "blue")) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-  geom_point(color = c("red"))
+southern <- san[san$PdDistrict == "SOUTHERN" & san$Category == "LARCENY/THEFT", ]
+counts <- aggregate(Count ~ DayOfWeek, data = southern, sum)
+ggplot(counts, aes(DayOfWeek, Count)) + 
+  labs(title = "Thefts in southern district by day-of-week", x = "DayOfWeek", y = "Thefts count") +
+  theme(axis.text.y = element_text(size = 6, color = "blue")) + ylim(0,500) +
+  theme(axis.text.x = element_text(size = 10, color = "blue", angle = 90, hjust = 1)) + 
+  geom_point(color = c("red")) +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+## How thefts vary in the southern district by date
+Plotting the thefts count by date reveals that the thefts tend to increase over the summer months.
+
+```{r}
+counts <- aggregate(Count ~ Date, data = southern, sum)
+ggplot(counts, aes(Date, Count)) + 
+  labs(title = "Thefts in southern district by date", x = "Date", y = "Thefts count") +
+  theme(axis.text.y = element_text(size = 6, color = "blue")) + ylim(0,60) +
+  theme(axis.text.x = element_text(size = 10, color = "blue", angle = 90, hjust = 1)) + 
+  geom_point(color = c("red")) +
+  geom_smooth(method = "lm", se = TRUE)
 ```
 
 ## Areas with most common robberies or thefts
