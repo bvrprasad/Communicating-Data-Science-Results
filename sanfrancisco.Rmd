@@ -1,18 +1,18 @@
 ---
-title: 'Nearly 5 percent of thefts in San Francisco occur at 800 Block of BRYANT ST'
+title: 'A brief criminal incident analysis in San Francisco of Summer 2014'
 author: "Prasad Bandaru"
-date: "24 January 2016"
+date: "13 February 2016"
 output: pdf_document
 ---
 
-The criminal incident data from San Francisco for the summer of 2014 has been made public. I will make an visual analysis on these incidents to find out the top 5 types of crime based on the time of the day and make following analysis.
-* figure out the districts where these crime is the most
+The criminal incident data from San Francisco for the summer of 2014 has been made public. I made a visual analysis on these incidents to find out the top 5 types of crime based on the time of the day and make following analysis.
+* figure out the districts where these crime are most
 * pickup the top crime and the corresponding district and analyse it for given period in the input data and also by day-of-week
 * finally figure out an exact location where the top crime is most concentrated
 
 This report is created using Rmarkdown and the source code is available [linked github](https://github.com/bvrprasad/Communicating-Data-Science-Results/blob/master/sanfrancisco.Rmd)
 
-```{r echo=FALSE,message=FALSE}
+```{r echo=TRUE,message=FALSE}
 library("dplyr")
 library("lubridate")
 library("ggplot2")
@@ -22,7 +22,7 @@ library("caret")
 # Dataset overview
 Load the san francisco crime incidents data. Initial look at the data reveals that it contains 13 fields. Of these category, date, time, dayofweek and location details are important for my current analysis. There are 34 categories of crime.
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 san <- read.csv("sanfrancisco_incidents_summer_2014.csv")
 str(san)
 levels(san$Category)
@@ -43,7 +43,7 @@ san$Count <- c(1)
 # Top crimes variation by time of day
 I plot the hourly incidents count for the top 5 crime category. The plot reveals that theft has a very high variation over the day and also it is most committed crime. The number of thefts increases slowly over the day and peaks at 6pm. Then it gradually comes down and is at minimum between 4 am and 5 am.  
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 counts <- aggregate(Count ~ Category + Hour, data = san, sum)
 topCrimes <- aggregate(Count ~ Category, data = san, sum)
 topX <- topCrimes$Category [order (topCrimes$Count, decreasing = TRUE)]
@@ -60,7 +60,7 @@ ggplot(data = subset(counts, Category %in% topX [1 : 5]), aes(Hour, Count)) +
 # Top crimes variation by district
 Further splitting the top 5 incidents by district reveals that the number of thefts are more in central, northern and southern districts compared to other districts. In the southern district the thefts are 5 times more than other lower theft districts. So, we will dig more into the theft in the southern district.
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 areawise <- aggregate(Count ~ Category + PdDistrict, data = san, sum)
 ggplot(data = subset(areawise, Category %in% topX [1 : 5]), aes(PdDistrict, Count)) +
   facet_grid(~ Category) +
@@ -76,7 +76,7 @@ ggplot(data = subset(areawise, Category %in% topX [1 : 5]), aes(PdDistrict, Coun
 # Thefts variation in the southern district by day-of-week
 Plotting the thefts count by day-of-week reveals that there are only few variations over the week days. And somewhat higher value during the weekend.  
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 southern <- san[san$PdDistrict == "SOUTHERN" & san$Category == "LARCENY/THEFT", ]
 counts <- aggregate(Count ~ DayOfWeek, data = southern, sum)
 ggplot(counts, aes(DayOfWeek, Count)) + 
@@ -89,9 +89,9 @@ ggplot(counts, aes(DayOfWeek, Count)) +
 \pagebreak
 
 # Thefts variation in the southern district by date
-Plotting the thefts count by date reveals that the thefts tend to increase over the summer months in the southern district. It might be due to the weather factor, where increasing temperatures could be leading to more thefts.  
+Plotting the thefts count by date reveals that the thefts tend to increase over the summer months in the southern district. It assume that it might be due to the weather factor, where increasing temperatures could be leading to more thefts. However, I don't make any conclusions on this correlation!
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 counts <- aggregate(Count ~ Date, data = southern, sum)
 ggplot(counts, aes(Date, Count)) + 
   labs(title = "Thefts in southern district by date", x = "Date", y = "Thefts count") +
@@ -104,10 +104,10 @@ ggplot(counts, aes(Date, Count)) +
 \pagebreak
 
 # Location of highest theft 
-Plotting the concentration of the theft crimes and further digging into the data reveals that 800 Block of BRYANT ST in Southern district San Francisco has the highest concetration of thefts. The figure is close to 5% of all thefts in San Francisco and is close to 18% of all thefts in that district. This is really a very very high figure and this location might be the most dangerous places in San Francisco.   
+Plotting the concentration of the theft crimes and further digging into the data reveals that 800 Block of BRYANT ST in Southern district San Francisco has the highest concetration of thefts. The figure is close to 5% of all thefts in San Francisco and is close to 18% of all thefts in that district. This is really a very very high figure and there is something pecuiar about this location in San Francisco that would be interesting to make further analysis.
 
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 allThefts = aggregate(Count ~ X + Y + PdDistrict, data = subset(san, san$Category == "LARCENY/THEFT"), sum)
 southThefts <- aggregate(Count ~ X + Y, data = subset(allThefts, allThefts$PdDistrict == "SOUTHERN"), sum)
 topThefts <- head(southThefts[order(southThefts$Count, decreasing=TRUE),], 10)
@@ -119,7 +119,7 @@ ggplot(topThefts, aes(X,Y)) +
 ```
 
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 highestTheft <- head(southThefts[order(southThefts$Count, decreasing=TRUE),], 1)
 highestTheftAddress <- subset(san, san$X == highestTheft$X & san$Y == highestTheft$Y, 
                       select = c(Address, PdDistrict))
